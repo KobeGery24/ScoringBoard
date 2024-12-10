@@ -2,18 +2,18 @@ import React, { useState, useEffect } from "react";
 import { Timer } from "../components/Timer";
 import { TeamScore } from "../components/TeamScore";
 import { MatchControls } from "../components/MatchControls";
-import type { Team } from "../types";
+import type { Team,Player } from "../types";
 
 const defaultHomeTeam: Team = {
   name: "Home Team",
   score: 0,
   timeouts: 3,
   players: [
-    { id: 1, name: "Player 1", number: "1", fouls: 0 },
-    { id: 2, name: "Player 2", number: "2", fouls: 0 },
-    { id: 3, name: "Player 3", number: "3", fouls: 0 },
-    { id: 4, name: "Player 4", number: "4", fouls: 0 },
-    { id: 5, name: "Player 5", number: "5", fouls: 0 },
+    { id: 1, name: "Player 1", number: "1", fouls: 0, points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 2, name: "Player 2", number: "2", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 3, name: "Player 3", number: "3", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 4, name: "Player 4", number: "4", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 5, name: "Player 5", number: "5", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
   ],
 };
 
@@ -22,11 +22,11 @@ const defaultAwayTeam: Team = {
   score: 0,
   timeouts: 3,
   players: [
-    { id: 1, name: "Player 1", number: "1", fouls: 0 },
-    { id: 2, name: "Player 2", number: "2", fouls: 0 },
-    { id: 3, name: "Player 3", number: "3", fouls: 0 },
-    { id: 4, name: "Player 4", number: "4", fouls: 0 },
-    { id: 5, name: "Player 5", number: "5", fouls: 0 },
+    { id: 1, name: "Player 1", number: "1", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 2, name: "Player 2", number: "2", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 3, name: "Player 3", number: "3", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 4, name: "Player 4", number: "4", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
+    { id: 5, name: "Player 5", number: "5", fouls: 0 , points: 0, rebounds: 0, assists: 0, steals: 0 },
   ],
 };
 
@@ -57,45 +57,59 @@ export function Scoreboard() {
 
   const handleSave = () => {
     const savedMatches = JSON.parse(localStorage.getItem("savedMatches") || "[]");
+  
     const newMatch = {
       homeTeam: homeTeam.name,
       awayTeam: awayTeam.name,
       homeScore: homeTeam.score,
       awayScore: awayTeam.score,
       date: new Date().toISOString(),
+      homePlayers: homeTeam.players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        number: player.number,
+        points: player.points || 0,
+        rebounds: player.rebounds || 0,
+        assists: player.assists || 0,
+        steals: player.steals || 0,
+        fouls: player.fouls || 0,
+      })),
+      awayPlayers: awayTeam.players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        number: player.number,
+        points: player.points || 0,
+        rebounds: player.rebounds || 0,
+        assists: player.assists || 0,
+        steals: player.steals || 0,
+        fouls: player.fouls || 0,
+      })),
     };
+  
     localStorage.setItem("savedMatches", JSON.stringify([...savedMatches, newMatch]));
-    console.log("Match saved!");
+    alert("Match saved with player stats!");
   };
 
-  const handleHomeScoreChange = (amount: number) => {
-    setHomeTeam((prev) => ({ ...prev, score: prev.score + amount }));
-  };
 
-  const handleAwayScoreChange = (amount: number) => {
-    setAwayTeam((prev) => ({ ...prev, score: prev.score + amount }));
-  };
-
-  const handleHomeFoulChange = (playerId: number) => {
-    setHomeTeam((prev) => ({
-      ...prev,
-      players: prev.players.map((player) =>
-        player.id === playerId
-          ? { ...player, fouls: Math.min(player.fouls + 1, 5) }
-          : player
-      ),
-    }));
-  };
-
-  const handleAwayFoulChange = (playerId: number) => {
-    setAwayTeam((prev) => ({
-      ...prev,
-      players: prev.players.map((player) =>
-        player.id === playerId
-          ? { ...player, fouls: Math.min(player.fouls + 1, 5) }
-          : player
-      ),
-    }));
+  const handleScoreChange = (team: string, increment: number) => {
+    let currentScore = increment;
+    if (team === homeTeam.name) {
+      homeTeam.players.forEach((player) => {
+        currentScore += player.points;
+      });
+      setHomeTeam((prev) => ({
+        ...prev,
+        score: currentScore,
+      }));
+    } else if(team === awayTeam.name) {
+      awayTeam.players.forEach((player) => {
+        currentScore += player.points;
+      });
+      setAwayTeam((prev) => ({
+        ...prev,
+        score: currentScore,
+      }));
+    }
   };
 
   const handleHomeTimeoutChange = (amount: number) => {
@@ -109,6 +123,36 @@ export function Scoreboard() {
     setAwayTeam((prev) => ({
       ...prev,
       timeouts: Math.max(0, Math.min(prev.timeouts + amount, 4)),
+    }));
+  };
+  const handleStatChange = (
+    teamSetter: React.Dispatch<React.SetStateAction<Team>>,
+    playerId: number,
+    stat: string,
+    increment: number
+  ) => {
+    teamSetter((prevTeam) => ({
+      ...prevTeam,
+      players: prevTeam.players.map((player) => {
+        if (player.id === playerId) {
+          switch (stat) {
+            case "points":
+              handleScoreChange(prevTeam.name, increment);
+              return { ...player, points: player.points + increment };
+            case "rebounds":
+              return { ...player, rebounds: player.rebounds + increment };
+            case "assists":
+              return { ...player, assists: player.assists + increment };
+            case "steals":
+              return { ...player, steals: player.steals + increment };
+            case "fouls":
+              return { ...player, fouls: Math.min(player.fouls + increment, 5) }; // Max 5 fouls
+            default:
+              return player; // Ha a stat érték ismeretlen, nincs változtatás
+          }
+        }
+        return player; // Ha a player.id nem egyezik, nincs változtatás
+      }),
     }));
   };
 
@@ -128,14 +172,16 @@ export function Scoreboard() {
       <div className="grid md:grid-cols-2 gap-8">
         <TeamScore
           team={homeTeam}
-          onScoreChange={handleHomeScoreChange}
-          onFoulChange={handleHomeFoulChange}
+          onStatChange={(playerId, stat, increment) =>
+            handleStatChange(setHomeTeam, playerId, stat, increment)
+          }
           onTimeoutChange={handleHomeTimeoutChange}
         />
         <TeamScore
           team={awayTeam}
-          onScoreChange={handleAwayScoreChange}
-          onFoulChange={handleAwayFoulChange}
+          onStatChange={(playerId, stat, increment) =>
+            handleStatChange(setAwayTeam, playerId, stat, increment)
+          }
           onTimeoutChange={handleAwayTimeoutChange}
         />
       </div>

@@ -3,6 +3,10 @@ export interface Player {
     name: string;
     number: string;
     fouls: number;
+    points: number;
+    rebounds: number;
+    assists: number;
+    steals: number;
   }
   
   export interface Team {

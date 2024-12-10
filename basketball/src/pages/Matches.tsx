@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Trash2 } from "lucide-react";
 
+type Player = {
+  id: number;
+  name: string;
+  number: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  fouls: number;
+};
+
 type Match = {
   homeTeam: string;
   awayTeam: string;
   homeScore: number;
   awayScore: number;
   date: string;
+  homePlayers: Player[];
+  awayPlayers: Player[];
 };
 
 export function Matches() {
@@ -23,6 +36,85 @@ export function Matches() {
     localStorage.setItem("savedMatches", JSON.stringify(updatedMatches));
   };
 
+  const handleExport = () => {
+    if (savedMatches.length > 0) {
+      const csvRows = [];
+
+      csvRows.push(
+        [
+          "Home Team",
+          "Away Team",
+          "Home Score",
+          "Away Score",
+          "Date",
+          "Time",
+          "Player Team",
+          "Player Name",
+          "Player Number",
+          "Points",
+          "Rebounds",
+          "Assists",
+          "Steals",
+          "Fouls",
+        ].join(",")
+      );
+
+      savedMatches.forEach((match) => {
+        const matchDate = new Date(match.date).toLocaleString();
+
+        match.homePlayers.forEach((player) => {
+          csvRows.push(
+            [
+              match.homeTeam,
+              match.awayTeam,
+              match.homeScore,
+              match.awayScore,
+              matchDate,
+              match.homeTeam,
+              player.name,
+              player.number,
+              player.points,
+              player.rebounds,
+              player.assists,
+              player.steals,
+              player.fouls,
+            ].join(",")
+          );
+        });
+
+        // Add away players
+        match.awayPlayers.forEach((player) => {
+          csvRows.push(
+            [
+              match.homeTeam,
+              match.awayTeam,
+              match.homeScore,
+              match.awayScore,
+              matchDate,
+              match.awayTeam,
+              player.name,
+              player.number,
+              player.points,
+              player.rebounds,
+              player.assists,
+              player.steals,
+              player.fouls,
+            ].join(",")
+          );
+        });
+      });
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "matches_with_players.csv";
+      link.click();
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -30,29 +122,7 @@ export function Matches() {
           <h1 className="text-2xl font-bold">Match History</h1>
           <button
             className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-            onClick={() => {
-              if (savedMatches.length > 0) {
-                const csvContent = [
-                  ["Home Team", "Away Team", "Home Score", "Away Score", "Date"],
-                  ...savedMatches.map((match) => [
-                    match.homeTeam,
-                    match.awayTeam,
-                    match.homeScore,
-                    match.awayScore,
-                    new Date(match.date).toLocaleString(),
-                  ]),
-                ]
-                  .map((e) => e.join(","))
-                  .join("\n");
-
-                const blob = new Blob([csvContent], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "matches.csv";
-                link.click();
-              }
-            }}
+            onClick={handleExport}
           >
             Export Games
           </button>
